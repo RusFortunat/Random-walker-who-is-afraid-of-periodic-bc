@@ -146,10 +146,10 @@ class Environment():
                 self.record_current[self.walker_position] += delta_x/(0.1*self.simulation_time)
             # punish the walker if it crosses the periodic boundary
             if self.walker_position + delta_x > self.lattice_size - 1:
-                self.walker_position = self.walker_position + delta_x - self.lattice_size + 1
+                self.walker_position = self.walker_position + delta_x - self.lattice_size
                 reward = -100
             if self.walker_position + delta_x < 0:
-                self.walker_position = self.walker_position + delta_x + self.lattice_size - 1
+                self.walker_position = self.walker_position + delta_x + self.lattice_size
                 reward = -100
             else: 
                 self.walker_position = self.walker_position + delta_x
@@ -194,6 +194,7 @@ if __name__ == '__main__':
     pdf = np.zeros(L)
     current = np.zeros(L)
 
+    dumm_walkers = 0
     for run in range(0,N_RUNS):
         print("Run", run + 1)
 
@@ -205,23 +206,42 @@ if __name__ == '__main__':
             total_score[timestep] += score[timestep] / N_RUNS
             total_loss[timestep] += loss[timestep] / N_RUNS
             
-        for x in range(0,L):
-            pdf[x] += pdf_per_run[x] / N_RUNS
-            current[x] += current_per_run[x] / N_RUNS
+        # see if the derivative of the end tail of the score curve is positive
+        # if yes, then the RW learned to avoid the periodic boundary
+        score_growing = False
+        delta = 0
+        for timestep in range(n_of_time_snapshots - 10, n_of_time_snapshots):
+            delta += score[timestep] - score[timestep - 1] # should be positive
+        if (delta > 0):
+            score_growing = True
+        else:
+            dumm_walkers += 1
+       
+        # record pdf and current only if the RW learned to do the thing  
+        if(score_growing):
+            for x in range(0,L):
+                pdf[x] += pdf_per_run[x] 
+                current[x] += current_per_run[x] 
 
     print("Python execution time: %s seconds " % (time.time() - start_time))
+    print("Number of walkers that haven't figured it out: ", dumm_walkers)
+    
+    # normalise pdf and current arrays
+    for x in range(0,L):
+        pdf[x] /= (N_RUNS - dumm_walkers)
+        current[x]  /= (N_RUNS - dumm_walkers)
 
     # record text output file
     shift = int(L/2)
-    x_axis = np.arrange(0,L)
+    x_axis = np.arange(0,L)
     x_axis_shifted = np.arange(-shift,shift)
     pdf_shifted = np.roll(pdf,shift)
     current_shifted = np.roll(current,shift) 
-    output_pdf_current = "AC_output_total/pdf_and_current_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".txt"
+    output_pdf_current = "AC_output_exclude/pdf_and_current_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".txt"
     np.savetxt(output_pdf_current, np.c_[x_axis,pdf,current, pdf_shifted, current_shifted])
 
     # plot reward vs time
-    tot_reward_filename = "AC_output_total/total_reward_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
+    tot_reward_filename = "AC_output_exclude/total_reward_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
     plt.figure(figsize=(10,8))
     axes = plt.gca()
     plt.xlabel("time", fontsize=24)
@@ -235,7 +255,7 @@ if __name__ == '__main__':
     #plt.show()
     
     # plot loss vs time
-    tot_loss_filename = "AC_output_total/total_loss_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
+    tot_loss_filename = "AC_output_exclude/total_loss_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
     plt.figure(figsize=(10,8))
     axes = plt.gca()
     plt.xlabel("time", fontsize=24)
@@ -249,7 +269,7 @@ if __name__ == '__main__':
     #plt.show()
     
     # plot pdf
-    pdf_filename = "AC_output_total/PDF_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
+    pdf_filename = "AC_output_exclude/PDF_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
     plt.figure(figsize=(10,8))
     axes = plt.gca()
     plt.xlabel("X", fontsize=24)
@@ -262,7 +282,7 @@ if __name__ == '__main__':
     #plt.show()
     
      # plot pdf shifted
-    pdf_shifted_filename = "AC_output_total/PDF_shifted_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
+    pdf_shifted_filename = "AC_output_exclude/PDF_shifted_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
     plt.figure(figsize=(10,8))
     axes = plt.gca()
     plt.xlabel("X", fontsize=24)
@@ -275,7 +295,7 @@ if __name__ == '__main__':
     #plt.show()
     
     # plot current shifted
-    current_filename = "AC_output_total/Current_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
+    current_filename = "AC_output_exclude/Current_L" + str(L) + "_TMAX" + str(T_MAX) + "_UPD" + str(T_UPDATE) + "_NRUNS" + str(N_RUNS) +"_lr" + str(lr) +  ".png"
     plt.figure(figsize=(10,8))
     axes = plt.gca()
     plt.xlabel("X", fontsize=24)
