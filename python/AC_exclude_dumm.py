@@ -177,10 +177,10 @@ class Environment():
 # our main
 if __name__ == '__main__':
     start_time = time.time() # time your simulation
-    L = 20          # lattice size
-    T_MAX = 100000    # total number of steps
+    L = 10          # lattice size
+    T_MAX = 40000    # total number of steps
     T_UPDATE = 100  # update networks every this number of steps
-    N_RUNS = 100
+    N_RUNS = 50
     lr = 1e-4       # learning rate
     gamma = 1.0
     n_actions = 2   # jump to the left or to the right
