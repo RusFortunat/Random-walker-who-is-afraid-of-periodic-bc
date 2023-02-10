@@ -205,12 +205,14 @@ class Environment():
 # our main
 if __name__ == '__main__':
     start_time = time.time() # time your simulation
-    L = 20          # lattice size
-    T_MAX = 200000    # total number of steps
-    T_UPDATE = 100  # update networks every this number of steps
-    N_RUNS = 100
-    lr = 1e-3       # learning rate
-    gamma = 1.0
+    L = sys.argv[1]          # lattice size
+    T_MAX = sys.argv[2]      # total number of steps
+    T_UPDATE = sys.argv[3]   # update networks every this number of steps
+    N_RUNS = sys.argv[4]
+    lr = sys.argv[5]         # learning rate
+    gamma = sys.argv[6]
+    dir_path = sys.argv[7]
+    job_id = sys.argv[8]
     n_actions = 2   # jump to the left or to the right
     observation_radius = 2
     input_dims = 2*observation_radius + 1 # size of the observation state
